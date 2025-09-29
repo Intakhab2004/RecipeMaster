@@ -15,13 +15,13 @@ const baseRecipeSchema = new mongoose.Schema({
     imageURL: String,
     summary: String,
     ingredients: [String],
-    instructions: String,
+    instructions: [String],
 
     nutritions: {
-        calories: Number,
-        protein: Number,
-        carbs: Number,
-        fat: Number,
+        calories: String,
+        protein: String,
+        carbs: String,
+        fat: String
     },
 
     user: {
