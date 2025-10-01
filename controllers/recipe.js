@@ -154,43 +154,6 @@ exports.recipeSummary = async(req, res) => {
 }
 
 
-exports.getRecentRecipe = async(req, res) => {
-    try{
-        const userId = req.user.id;
-
-        const user = await User.findById(userId);
-        if(!user){
-            console.log("Token has not provided");
-            return res.status(401).json({
-                success: false,
-                message: "Token validation failed"
-            })
-        }
-
-        const recentRecipe = await RecentRecipe.find({user: userId});
-        if(!recentRecipe){
-            return res.status(403).json({
-                success: false,
-                message: "Something went wrong while fetching the recipes"
-            })
-        }
-
-        return res.status(200).json({
-            success: true,
-            message: "Recent recipe fetched successfully",
-            recentRecipe
-        })
-    }
-    catch(error){
-        console.log("Something went wrong: ", error);
-        return res.status(500).json({
-            success: false,
-            message: "Internal server error"
-        })
-    }
-}
-
-
 exports.saveRecipe = async(req, res) => {
     try{
         const { recipeId } = req.query;

@@ -3,6 +3,8 @@ const dbConnect = require("./config/dbConnect");
 const cookieParser = require("cookie-parser");
 const userRoutes = require("./routes/userRoute");
 const recipeRoutes = require("./routes/recipeRoute");
+const nutritionRoutes = require("./routes/nutritionRoute");
+const dataRoutes = require("./routes/dataRoute");
 
 const app = express();
 
@@ -16,6 +18,8 @@ app.use(cookieParser());
 // Mounting api-url on routes
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/recipe", recipeRoutes);
+app.use("/api/v1/nutrition", nutritionRoutes);
+app.use("/api/v1/data", dataRoutes);
 
 
 // Starting the server
