@@ -1,7 +1,9 @@
 const getFormattedItems = require("../helpers/formatItems");
 const User = require("../models/User");
 const RecentRecipe = require("../models/RecentRecipe");
+const SavedRecipe = require("../models/SavedRecipe");
 const { recipeSchema } = require("../schemas/recipeSchema");
+const { default: mongoose } = require("mongoose");
 
 
 
@@ -166,7 +168,7 @@ exports.getRecentRecipe = async(req, res) => {
         }
 
         const recentRecipe = await RecentRecipe.find({user: userId});
-        if(recentRecipe){
+        if(!recentRecipe){
             return res.status(403).json({
                 success: false,
                 message: "Something went wrong while fetching the recipes"
@@ -177,6 +179,132 @@ exports.getRecentRecipe = async(req, res) => {
             success: true,
             message: "Recent recipe fetched successfully",
             recentRecipe
+        })
+    }
+    catch(error){
+        console.log("Something went wrong: ", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        })
+    }
+}
+
+
+exports.saveRecipe = async(req, res) => {
+    try{
+        const { recipeId } = req.query;
+        const userId = req.user.id;
+
+        const user = await User.findById(userId)
+                                                .populate({
+                                                    path: "favoriteRecipes",
+                                                    select: "spoonacularId"
+                                                });
+        
+        if(!user){
+            console.log("User not found");
+            return res.status(401).json({
+                success: false,
+                message: "Token validation failed"
+            })
+        }
+
+        // Checking if recipe already in favorite list
+        const alreadyExists = user.favoriteRecipes.some(
+            (recipe) => recipe.spoonacularId.toString() === recipeId.toString()
+        )
+        if(alreadyExists){
+            console.log("Recipe already exists");
+            return res.status(401).json({
+                success: false,
+                message: "Recipe already exists in your collection"
+            })
+        }
+
+        const recipe = await RecentRecipe.findOne({spoonacularId: recipeId});
+        if(!recipe){
+            console.log("Recipe not found or may be vanished");
+            return res.status(404).json({
+                success: false,
+                message: "Recipe not available"
+            })
+        }
+
+        // Saving the recipe in SavedRecipe model
+        let savedRecipe = await SavedRecipe.findOne({spoonacularId: recipe.spoonacularId});
+        if(!savedRecipe){
+            const recipeData = recipe.toObject();
+            delete recipeData._id;
+
+            savedRecipe = await SavedRecipe.create(recipeData);
+        }
+
+        user.favoriteRecipes.push(savedRecipe._id);
+        await user.save();
+        
+        return res.status(200).json({
+            success: true,
+            message: "Recipe saved successfully"
+        })
+    }
+    catch(error){
+        console.log("Something went wrong: ", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        })
+    }
+}
+
+
+exports.deleteRecipe = async(req, res) => {
+    try{
+        const { recipeId } = req.query;
+        const userId = req.user.id;
+
+        const user = await User.findById(userId);
+        if(!user){
+            console.log("User not found");
+            return res.status(401).json({
+                success: false,
+                message: "Token validation failed"
+            })
+        }
+
+        const recipe = await SavedRecipe.findOne({spoonacularId: recipeId, user: user._id});
+        if(!recipe){
+            console.log("Recipe do not exists");
+            return res.status(403).json({
+                success: false,
+                message: "Recipe you are trying to delete not exists"
+            })
+        }
+
+        // Deleting from SavedRecipe collections
+        await SavedRecipe.findOneAndDelete({spoonacularId: recipeId, user: userId});
+
+        // removing from favoriteRecipes of user
+        const recipeExists = user.favoriteRecipes.some(
+            (recipe) => recipe.spoonacularId.toString() === recipeId.toString()
+        )
+        if(!recipeExists){
+            console.log("Recipe not exists in Favorite list");
+            return res.status(404).json({
+                success: false,
+                message: "Recipe is not present in favorite list"
+            })
+        }
+
+        await User.findByIdAndUpdate(
+            userId,
+            {$pull: {favoriteRecipes: recipe._id}},
+            {new: true}
+        )
+
+        return res.status(200).json({
+            success: true,
+            message: "Recipe deleted successfully"
         })
     }
     catch(error){
