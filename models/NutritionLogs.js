@@ -1,7 +1,12 @@
 const mongoose = require("mongoose");
 
 
-const mealSchema = new mongoose.Schema({
+const nutritionLogSchema = new mongoose.Schema({
+    user: {
+        type: mongoose.Types.ObjectId,
+        ref: "User",
+    },
+
     recipe: {
         type: mongoose.Types.ObjectId,
         ref: "SavedRecipe"
@@ -12,25 +17,16 @@ const mealSchema = new mongoose.Schema({
     },
 
     nutrition: {
-        calories: { type: Number, default: 0 },
-        protein: { type: Number, default: 0 },
-        carbs: { type: Number, default: 0 },
-        fat: { type: Number, default: 0 },
-    },
-})
-
-
-const nutritionLogSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        calories: { type: String },
+        protein: { type: String },
+        carbs: { type: String },
+        fat: { type: String }
     },
 
-    meals: [mealSchema], 
-
-    date: {
+    createdAt: {
         type: Date,
         default: Date.now,
+        index: { expires: "30d"}
     },
 })
 
