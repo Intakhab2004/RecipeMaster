@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const OTP = require("../models/OTP");
 const { mailSender } = require("../config/mailConfig");
-const { signUpSchema } = require("../schemas/signUpSchema");
+const { signUpSchema, usernameSchema } = require("../schemas/signUpSchema");
 const { verifySchema } = require("../schemas/verifySchema");
 const { siginSchema } = require("../schemas/signinSchema");
 
@@ -58,6 +58,44 @@ exports.sendOTP = async(req, res) => {
         return res.status(200).json({
             success: true,
             message: "Otp sent successfully"
+        })
+    }
+    catch(error){
+        console.log("Something went wrong: ", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        })
+    }
+}
+
+
+exports.uniqueUsername = async(req, res) => {
+    try{
+        const username = req.query.username.trim();
+        
+        // Zod validation
+        const validationResult = usernameSchema.safeParse({username});
+        if(!validationResult.success){
+            console.log("Please enter the username correctly");
+            return res.status(403).json({
+                success: false,
+                message: "Invalid username format",
+                errors: validationResult.error.issues
+            })
+        }
+
+        const user = await User.findOne({username});
+        if(user && user.isVerified){
+            return res.status(409).json({
+                success: false,
+                message: "Username is already taken"
+            })
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Username is available"
         })
     }
     catch(error){
