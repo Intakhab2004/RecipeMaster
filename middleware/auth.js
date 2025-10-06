@@ -3,9 +3,9 @@ const jwt = require("jsonwebtoken");
 
 async function auth(req, res, next){
     try{
-        const token = req.cookies?.token || req.body?.token || req.header("Authorization")?.replace("Bearer ", "");
+        const token = req.cookies?.token;
         if(!token){
-            console.log("Token is required");
+            console.log("Token required");
             return res.status(404).json({
                 success: false,
                 message: "Toekn have not provided"

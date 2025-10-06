@@ -5,6 +5,7 @@ const userRoutes = require("./routes/userRoute");
 const recipeRoutes = require("./routes/recipeRoute");
 const nutritionRoutes = require("./routes/nutritionRoute");
 const dataRoutes = require("./routes/dataRoute");
+const cors = require("cors");
 
 const app = express();
 
@@ -14,6 +15,11 @@ require("dotenv").config();
 // Required middlewares
 app.use(express.json());
 app.use(cookieParser());
+
+app.use(cors({
+    origin: "http://localhost:3000",
+    credentials: true
+}))
 
 // Mounting api-url on routes
 app.use("/api/v1/user", userRoutes);

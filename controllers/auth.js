@@ -57,7 +57,7 @@ exports.sendOTP = async(req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: "Otp sent successfully"
+            message: "Otp Resent Successfully"
         })
     }
     catch(error){
@@ -75,13 +75,10 @@ exports.uniqueUsername = async(req, res) => {
         const username = req.query.username.trim();
         
         // Zod validation
-        const validationResult = usernameSchema.safeParse({username});
+        const validationResult = usernameSchema.safeParse(username);
         if(!validationResult.success){
-            console.log("Please enter the username correctly");
             return res.status(403).json({
-                success: false,
-                message: "Invalid username format",
-                errors: validationResult.error.issues
+                success: false
             })
         }
 
@@ -198,7 +195,7 @@ exports.signUp = async(req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: "User created successfully, Please check your email for verification code"
+            message: "Account created successfully, Please check your email for verification code"
         })
     }
     catch(error){
@@ -293,7 +290,8 @@ exports.signIn = async(req, res) => {
                 {email: identifier},
                 {username: identifier}
             ]
-        });
+        }).populate("favoriteRecipes").populate("nutritionLogs");
+        
 
         if(!user){
             console.log("User not exists");
@@ -329,19 +327,38 @@ exports.signIn = async(req, res) => {
         }
 
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d"});
-        user.token = token;
         user.password = undefined;
 
         const cookieOptions = {
-            expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-            httpOnly: true
+            httpOnly: true,
+            expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
         }
 
         res.cookie("token", token, cookieOptions).status(200).json({
             success: true,
-            token,
             user,
             message: "User logged in successfully"
+        })
+    }
+    catch(error){
+        console.log("Something went wrong: ", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        })
+    }
+}
+
+
+exports.logout = async(req, res) => {
+    try{
+        res.clearCookie("token", {
+            httpOnly: true
+        })
+
+        return res.status(200).json({
+            success: true,
+            message: "Account Logged out Successfully"
         })
     }
     catch(error){
