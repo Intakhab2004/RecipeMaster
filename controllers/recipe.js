@@ -114,7 +114,7 @@ exports.recipeSummary = async(req, res) => {
             return res.status(200).json({
                 success: true,
                 message: "Recipe data is already available",
-                currentRecipe
+                recipeSummary: currentRecipe
             })
         }
 
@@ -134,14 +134,19 @@ exports.recipeSummary = async(req, res) => {
             fat: data2.fat
         }
 
-        currentRecipe.instructions = instructions;
-        currentRecipe.nutritions = nutritions;
-        await currentRecipe.save();
+        const updatedRecipe = await RecentRecipe.findOneAndUpdate(
+            { spoonacularId: recipeId, user: userId },
+            {
+                instructions: instructions,
+                nutritions: nutritions
+            },
+            { new: true }
+        )
 
         return res.status(200).json({
             success: true,
             message: "Recipe details fetched successfully",
-            currentRecipe
+            recipeSummary: updatedRecipe
         })
     }
     catch(error){
@@ -156,7 +161,7 @@ exports.recipeSummary = async(req, res) => {
 
 exports.saveRecipe = async(req, res) => {
     try{
-        const { recipeId } = req.query;
+        const { recipeId } = req.body;
         const userId = req.user.id;
 
         const user = await User.findById(userId)
@@ -223,7 +228,7 @@ exports.saveRecipe = async(req, res) => {
 
 exports.deleteRecipe = async(req, res) => {
     try{
-        const { recipeId } = req.query;
+        const { recipeId } = req.body;
         const userId = req.user.id;
 
         const user = await User.findById(userId);
@@ -246,18 +251,6 @@ exports.deleteRecipe = async(req, res) => {
 
         // Deleting from SavedRecipe collections
         await SavedRecipe.findOneAndDelete({spoonacularId: recipeId, user: userId});
-
-        // removing from favoriteRecipes of user
-        const recipeExists = user.favoriteRecipes.some(
-            (recipe) => recipe.spoonacularId.toString() === recipeId.toString()
-        )
-        if(!recipeExists){
-            console.log("Recipe not exists in Favorite list");
-            return res.status(404).json({
-                success: false,
-                message: "Recipe is not present in favorite list"
-            })
-        }
 
         await User.findByIdAndUpdate(
             userId,
